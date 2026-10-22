@@ -114,6 +114,20 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
 .estado-lista.error{ color:var(--bad); }
 .estado-lista button{ margin-top:10px; }
 
+/* Pendientes */
+#badgePend:not(:empty){ display:inline-block; min-width:18px; padding:0 5px; margin-left:4px; border-radius:9px; background:var(--bad); color:#fff; font-size:11px; line-height:18px; }
+.tabs button.activo #badgePend:not(:empty){ background:#1a1208; color:var(--amber); }
+.resumen-pend{ display:flex; justify-content:space-between; gap:10px; }
+.resumen-pend div span{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); }
+.resumen-pend div b{ font-size:20px; }
+.ayuda-pend{ font-size:12px; color:var(--text-dim); margin:0 2px 4px; line-height:1.4; }
+.prov-head{ display:flex; justify-content:space-between; font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--amber); margin:18px 2px 6px; font-weight:700; }
+.barra{ height:6px; background:var(--panel-2); border-radius:3px; overflow:hidden; margin-top:8px; }
+.barra i{ display:block; height:100%; background:var(--ok); }
+.pend-acc{ display:flex; gap:8px; margin-top:10px; }
+.pend-acc button{ flex:1; padding:9px; font-size:13px; }
+.atrasada{ color:var(--warn); }
+
 /* Login */
 #gate{ position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; }
 #gate .box{ width:100%; max-width:340px; }
@@ -165,6 +179,7 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
 
   <div class="tabs">
     <button data-tab="cargar" class="activo">Cargar</button>
+    <button data-tab="pendientes">Pendientes <span id="badgePend"></span></button>
     <button data-tab="historial">Historial</button>
   </div>
 
@@ -183,8 +198,8 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
           <div class="field">
             <label>Estado</label>
             <div class="seg" id="segEstado">
-              <button data-v="RECIBIDA" class="activo">Recibida</button>
-              <button data-v="REALIZADA">Pedida</button>
+              <button data-v="REALIZADA" class="activo">Pedida</button>
+              <button data-v="RECIBIDA">Recibida</button>
             </div>
           </div>
         </div>
@@ -236,6 +251,13 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
       </div>
     </section>
 
+    <!-- ================= PENDIENTES ================= -->
+    <section id="tabPendientes" class="oculto">
+      <div class="card resumen-pend" id="pResumen"></div>
+      <div class="ayuda-pend">Compras pedidas que todavía no entraron completas al stock. Se cierran solas cuando la app de stock carga la reposición.</div>
+      <div id="pLista"></div>
+    </section>
+
     <!-- ================= HISTORIAL ================= -->
     <section id="tabHistorial" class="oculto">
       <div class="field">
@@ -261,7 +283,7 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '2026-10-22.1';
+const APP_VERSION = '2026-10-22.2'; // pendientes de ingreso + recepción automática
 const SUPABASE_URL = 'https://kvewsxrfogosjwehookj.supabase.co';
 const API = SUPABASE_URL + '/functions/v1/compras-crud';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2ZXdzeHJmb2dvc2p3ZWhvb2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3OTA2OTksImV4cCI6MjEwMTM2NjY5OX0.6oyDPFG_8hAAULXCUn6uO7C-abxMSOxxMFFJ_xBFZHY';
@@ -283,7 +305,7 @@ let LISTA = [];              // compras del historial cargado
 let LISTA_SKU = null;        // si el historial es de un SKU puntual
 let EDITANDO = null;         // fila en edición
 let TANDA = [];              // compras cargadas en esta sesión
-let estado = 'RECIBIDA';
+let estado = 'REALIZADA'; // Pedida: se cierra sola cuando el stock entra por reposición
 let condicion = 'contado';
 let arrancado = false;
 let historialCargado = false;
@@ -367,6 +389,7 @@ async function arrancar() {
     $('userNombre').textContent = (USUARIO?.email || '').split('@')[0];
   } catch (e) { toast('No se pudo cargar el catálogo: ' + e.message, 'error'); }
   cargarHistorial(); // en segundo plano: sirve para avisar compras duplicadas
+  cargarPendientes(true);
 }
 
 async function cargarCatalogo() {
@@ -393,7 +416,9 @@ function irA(tab) {
   document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('activo', b.dataset.tab === tab));
   $('tabCargar').classList.toggle('oculto', tab !== 'cargar');
   $('tabHistorial').classList.toggle('oculto', tab !== 'historial');
+  $('tabPendientes').classList.toggle('oculto', tab !== 'pendientes');
   if (tab === 'historial') { if (historialCargado) pintarHistorial(); else cargarHistorial(); }
+  if (tab === 'pendientes') cargarPendientes();
   window.scrollTo(0, 0);
 }
 
@@ -541,7 +566,7 @@ async function guardar() {
       toast('Compra actualizada', 'ok');
       salirEdicion(); irA('historial'); pintarHistorial();
     } else {
-      TANDA.unshift(fila); pintarTanda();
+      TANDA.unshift(fila); pintarTanda(); cargarPendientes(true);
       toast(`Guardada: ${fila.sku} × ${fmtNum(fila.cantidad_pedida)}`, 'ok');
       limpiarProducto(); $('fSku').focus();
     }
@@ -591,6 +616,7 @@ function salirEdicion() {
   $('bannerEdicion').classList.add('oculto'); $('accionesEdicion').classList.add('oculto');
   $('btnGuardar').textContent = 'Guardar compra';
   limpiarProducto(); $('fFecha').value = hoyAR();
+  estado = 'REALIZADA'; setSeg('segEstado', estado);
 }
 $('btnCancelarEdicion').addEventListener('click', () => { salirEdicion(); irA('historial'); });
 $('btnBorrar').addEventListener('click', async () => {
@@ -644,7 +670,9 @@ function pintarHistorial() {
     if (c.fecha !== dia) { dia = c.fecha; html += `<div class="dia"><span>${fmtFecha(dia)}</span><span class="mono">${fmtARS(totDia[dia])}</span></div>`; }
     const pu = Number(c.precio_final_unitario) > 0 ? Number(c.precio_final_unitario) : null;
     const chips = [];
-    if (c.estado === 'REALIZADA') chips.push('<span class="chip warn">Pedida</span>');
+    if (c.estado === 'REALIZADA') chips.push(Number(c.cantidad_recibida) > 0
+      ? `<span class="chip warn">Parcial ${fmtNum(c.cantidad_recibida)}/${fmtNum(c.cantidad_pedida)}</span>`
+      : '<span class="chip warn">Pedida</span>');
     else if (c.cantidad_recibida !== null && Number(c.cantidad_recibida) !== Number(c.cantidad_pedida)) chips.push(`<span class="chip warn">Recibidas ${fmtNum(c.cantidad_recibida)}</span>`);
     if (c.condicion_compra === 'contado') chips.push('<span class="chip ok">Contado</span>');
     if (c.condicion_compra === 'cuenta_corriente') chips.push(`<span class="chip info">Cta. cte. ${c.dias_pago} d</span>`);
@@ -667,6 +695,74 @@ $('hLista').addEventListener('click', e => {
   if (!c) return;
   if (!USUARIO?.edita_todo && c.created_by !== USUARIO?.email) return toast('Solo podés editar compras que cargaste vos', 'error');
   entrarEdicion(c);
+});
+// ---------------- Pendientes de ingreso ----------------
+let PEND = [];
+async function cargarPendientes(silencioso = false) {
+  if (!silencioso) $('pLista').innerHTML = '<div class="estado-lista">Cargando…</div>';
+  try {
+    const j = await api('pendientes');
+    PEND = j.filas;
+    $('badgePend').textContent = PEND.length ? PEND.length : '';
+    pintarPendientes();
+  } catch (e) {
+    if (silencioso) return;
+    $('pLista').innerHTML = `<div class="estado-lista error">⚠️ ${esc(e.message)}<br><button class="btn-sec" id="pReintentar">Reintentar</button></div>`;
+    $('pReintentar').onclick = () => cargarPendientes();
+  }
+}
+function pintarPendientes() {
+  const total = PEND.reduce((a, c) => a + Number(c.valor_pendiente || 0), 0);
+  const unidades = PEND.reduce((a, c) => a + Number(c.cantidad_pendiente || 0), 0);
+  $('pResumen').innerHTML = `
+    <div><span>Compras</span><b class="mono">${PEND.length}</b></div>
+    <div><span>Unidades</span><b class="mono">${fmtNum(unidades)}</b></div>
+    <div style="text-align:right"><span>Valor pendiente</span><b class="mono">${fmtARS(total)}</b></div>`;
+  if (!PEND.length) { $('pLista').innerHTML = '<div class="estado-lista">✅ No hay ingresos pendientes.</div>'; return; }
+  const grupos = new Map();
+  for (const c of PEND) { const k = c.proveedor || 'Sin proveedor'; if (!grupos.has(k)) grupos.set(k, []); grupos.get(k).push(c); }
+  let html = '';
+  for (const [prov, filas] of [...grupos.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    const sub = filas.reduce((a, c) => a + Number(c.valor_pendiente || 0), 0);
+    html += `<div class="prov-head"><span>${esc(prov)}</span><span class="mono">${fmtARS(sub)}</span></div>`;
+    for (const c of filas) {
+      const ped = Number(c.cantidad_pedida), rec = Number(c.cantidad_recibida), pend = Number(c.cantidad_pendiente);
+      const pct = ped > 0 ? Math.min(100, Math.round(rec / ped * 100)) : 0;
+      const dias = Number(c.dias_esperando);
+      html += `
+        <div class="compra" data-pid="${c.id}">
+          <div class="l1"><span class="sku mono">${esc(c.sku)}</span><span class="mono">${fmtARS(Number(c.valor_pendiente) || null)}</span></div>
+          <div class="tit">${esc(c.descripcion || SKU_MAP.get(c.sku)?.titulo || '')}</div>
+          <div class="l2"><span>Faltan <b class="mono">${fmtNum(pend)}</b> de ${fmtNum(ped)}</span><span class="${dias > 15 ? 'atrasada' : ''}">Pedida ${fmtFecha(c.fecha)} · ${dias} ${dias === 1 ? 'día' : 'días'}</span></div>
+          ${rec > 0 ? `<div class="barra"><i style="width:${pct}%"></i></div><div class="tit">Recibidas ${fmtNum(rec)}${c.ultima_entrega ? ' · última entrega ' + fmtFecha(String(c.ultima_entrega).slice(0, 10)) : ''}</div>` : ''}
+          <div class="pend-acc">
+            <button class="btn-sec" data-acc="editar">Editar</button>
+            <button class="btn-sec" data-acc="recibida">Marcar recibida</button>
+          </div>
+        </div>`;
+    }
+  }
+  $('pLista').innerHTML = html;
+}
+$('pLista').addEventListener('click', async (e) => {
+  const card = e.target.closest('[data-pid]'); if (!card) return;
+  const id = Number(card.dataset.pid);
+  const c = PEND.find(x => x.id === id); if (!c) return;
+  const acc = e.target.closest('[data-acc]')?.dataset.acc;
+  if (!USUARIO?.edita_todo && c.created_by !== USUARIO?.email) return toast('Solo podés modificar compras que cargaste vos', 'error');
+  if (acc === 'recibida') {
+    const ok = await dialogo({ titulo: 'Marcar como recibida', mensaje: `${c.sku}: faltan ${fmtNum(c.cantidad_pendiente)} de ${fmtNum(c.cantidad_pedida)} (${c.proveedor || 'sin proveedor'}).\nNo cambia el stock: solo cierra la compra.`, aceptar: 'Marcar recibida' });
+    if (!ok) return;
+    try { await api('marcar_recibida', { id }); toast('Compra cerrada', 'ok'); historialCargado = false; cargarPendientes(); }
+    catch (err) { toast(err.message, 'error'); }
+    return;
+  }
+  // Editar (botón o tap en la tarjeta): traer la fila completa
+  try {
+    let fila = LISTA.find(x => x.id === id);
+    if (!fila) { const j = await api('listar', { sku: c.sku }); fila = j.filas.find(x => x.id === id); }
+    if (fila) entrarEdicion(fila); else toast('No se encontró la compra', 'error');
+  } catch (err) { toast(err.message, 'error'); }
 });
 </script>
 </body>
