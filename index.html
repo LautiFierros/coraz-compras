@@ -38,8 +38,10 @@ header h1 span{ color:var(--text-dim); font-weight:400; letter-spacing:.04em; }
 .tabs{ display:flex; gap:6px; padding:12px 16px 0; max-width:640px; margin:0 auto; }
 .tabs button{
   flex:1; background:var(--panel); border:1px solid var(--line); color:var(--text-dim);
-  padding:10px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer;
+  padding:10px 4px; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer;
+  white-space:nowrap; min-width:0;
 }
+@media (max-width:380px){ .tabs{ gap:4px; } .tabs button{ font-size:12px; } }
 .tabs button.activo{ background:var(--amber); color:#1a1208; border-color:var(--amber); }
 
 main{ max-width:640px; margin:0 auto; padding:14px 16px; }
@@ -128,6 +130,39 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
 .pend-acc button{ flex:1; padding:9px; font-size:13px; }
 .atrasada{ color:var(--warn); }
 
+/* A comprar */
+#badgeSug:not(:empty){ display:inline-block; min-width:18px; padding:0 5px; margin-left:4px; border-radius:9px; background:var(--amber-dim); color:#fff; font-size:11px; line-height:18px; }
+.tabs button.activo #badgeSug:not(:empty){ background:#1a1208; color:var(--amber); }
+.sug-barra{ display:flex; gap:8px; align-items:center; margin-bottom:10px; }
+.sug-barra input{ flex:1; min-width:0; }
+.sug-barra .seg{ flex:none; }
+.sug-barra .seg button{ padding:9px 10px; font-size:13px; white-space:nowrap; }
+.grupo{ background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); margin-bottom:14px; overflow:hidden; }
+.grupo-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line); }
+.grupo-head b{ color:var(--amber); font-size:13px; letter-spacing:.06em; text-transform:uppercase; }
+.grupo-head span{ font-size:12px; color:var(--text-dim); }
+.item{ padding:11px 14px; border-bottom:1px solid var(--line); display:grid; grid-template-columns:26px 1fr; gap:4px 8px; }
+.item.off{ opacity:.55; }
+.item input[type=checkbox]{ width:20px; height:20px; accent-color:var(--amber); margin:1px 0 0; }
+.item .cab{ display:flex; justify-content:space-between; gap:8px; align-items:baseline; min-width:0; }
+.item .cab .sku{ color:var(--amber); font-weight:700; }
+.item .cab .sub{ font-size:13px; }
+.item .tit{ grid-column:2; font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.item .datos{ grid-column:2; font-size:12px; color:var(--text-dim); line-height:1.5; }
+.item .datos b{ color:var(--text); font-weight:600; }
+.item .datos .bajo{ color:var(--bad); }
+.item .datos .medio{ color:var(--warn); }
+.item .ins{ grid-column:2; display:grid; grid-template-columns:1fr 1fr 1.4fr; gap:8px; margin-top:6px; }
+.item .ins label{ display:block; font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); margin-bottom:3px; }
+.item .ins input{ width:100%; background:var(--panel-2); border:1px solid var(--line); color:var(--text); padding:8px; border-radius:var(--radius-sm); font-size:16px; font-family:inherit; }
+.item .ins input:focus{ outline:none; border-color:var(--amber); }
+.item .ins input.pers{ border-color:var(--amber-dim); color:var(--amber); }
+.grupo-pie{ padding:12px 14px; background:var(--panel-2); }
+.grupo-pie .fila{ align-items:flex-end; }
+.grupo-pie .field{ margin-bottom:10px; }
+.grupo-pie select,.grupo-pie input{ width:100%; background:var(--panel); border:1px solid var(--line); color:var(--text); padding:9px; border-radius:var(--radius-sm); font-size:16px; }
+.grupo-pie .seg{ background:var(--panel); }
+
 /* Login */
 #gate{ position:fixed; inset:0; z-index:100; background:var(--bg); display:flex; align-items:center; justify-content:center; padding:24px; }
 #gate .box{ width:100%; max-width:340px; }
@@ -178,12 +213,28 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
   </header>
 
   <div class="tabs">
+    <button data-tab="comprar">A comprar <span id="badgeSug"></span></button>
     <button data-tab="cargar" class="activo">Cargar</button>
     <button data-tab="pendientes">Pendientes <span id="badgePend"></span></button>
     <button data-tab="historial">Historial</button>
   </div>
 
   <main>
+    <!-- ================= A COMPRAR ================= -->
+    <section id="tabComprar" class="oculto">
+      <div class="card resumen-pend" id="sResumen"></div>
+      <div class="ayuda-pend" id="sAyuda">Cada artículo apunta a tener stock para sus días a cubrir. Lo que se vende se suma solo a la próxima compra. Cuenta stock propio, Full y lo que ya está pedido.</div>
+      <div class="sug-barra">
+        <input type="search" id="sBuscar" placeholder="Filtrá por SKU, producto o proveedor" autocomplete="off"
+          style="background:var(--panel-2);border:1px solid var(--line);color:var(--text);padding:10px;border-radius:var(--radius-sm);font-size:16px;">
+        <div class="seg" id="segVista">
+          <button data-v="comprar" class="activo">A comprar</button>
+          <button data-v="todos">Todos</button>
+        </div>
+      </div>
+      <div id="sLista"></div>
+    </section>
+
     <!-- ================= CARGAR ================= -->
     <section id="tabCargar">
       <div id="bannerEdicion" class="oculto">
@@ -283,7 +334,7 @@ main{ max-width:640px; margin:0 auto; padding:14px 16px; }
 <div id="toast"></div>
 
 <script>
-const APP_VERSION = '2026-10-22.2'; // pendientes de ingreso + recepción automática
+const APP_VERSION = '2026-10-22.3'; // solapa "A comprar": días a cubrir por artículo + pasar a compra
 const SUPABASE_URL = 'https://kvewsxrfogosjwehookj.supabase.co';
 const API = SUPABASE_URL + '/functions/v1/compras-crud';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2ZXdzeHJmb2dvc2p3ZWhvb2tqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3OTA2OTksImV4cCI6MjEwMTM2NjY5OX0.6oyDPFG_8hAAULXCUn6uO7C-abxMSOxxMFFJ_xBFZHY';
@@ -390,6 +441,7 @@ async function arrancar() {
   } catch (e) { toast('No se pudo cargar el catálogo: ' + e.message, 'error'); }
   cargarHistorial(); // en segundo plano: sirve para avisar compras duplicadas
   cargarPendientes(true);
+  cargarSugeridas(true); // badge de "A comprar"
 }
 
 async function cargarCatalogo() {
@@ -417,8 +469,10 @@ function irA(tab) {
   $('tabCargar').classList.toggle('oculto', tab !== 'cargar');
   $('tabHistorial').classList.toggle('oculto', tab !== 'historial');
   $('tabPendientes').classList.toggle('oculto', tab !== 'pendientes');
+  $('tabComprar').classList.toggle('oculto', tab !== 'comprar');
   if (tab === 'historial') { if (historialCargado) pintarHistorial(); else cargarHistorial(); }
   if (tab === 'pendientes') cargarPendientes();
+  if (tab === 'comprar') cargarSugeridas();
   window.scrollTo(0, 0);
 }
 
@@ -763,6 +817,267 @@ $('pLista').addEventListener('click', async (e) => {
     if (!fila) { const j = await api('listar', { sku: c.sku }); fila = j.filas.find(x => x.id === id); }
     if (fila) entrarEdicion(fila); else toast('No se encontró la compra', 'error');
   } catch (err) { toast(err.message, 'error'); }
+});
+
+// ---------------- A comprar (sugerencias en vivo) ----------------
+// Objetivo por artículo = velocidad 60d × días a cubrir. A comprar = objetivo − (propio + Full + en camino).
+// Los días se guardan por SKU (vacío = default). Cantidad y precio se pueden pisar antes de pasar a compra.
+let SUG = [];
+let SUG_MAP = new Map();
+let DIAS_DEFAULT = 25;
+let CONDS = {};               // proveedor_id → {condicion, dias_pago} de la última compra
+let VISTA = 'comprar';
+const EDIT = new Map();       // sku → {sel, cant, precio, cantTocada}
+const GCONF = new Map();      // grupo → {proveedor_id, condicion, dias_pago}
+let sugCargando = false;
+
+const cantSug = (r) => Math.max(Math.ceil(Number(r.velocidad_diaria) * Number(r.dias_cubrir) - 1e-9) - Number(r.stock_total), 0);
+const grupoDe = (r) => r.proveedor_id || 'sin';
+function editDe(r) {
+  if (!EDIT.has(r.sku)) {
+    const c = cantSug(r);
+    EDIT.set(r.sku, { sel: c > 0, cant: c, precio: Number(r.costo_unitario) > 0 ? Math.round(Number(r.costo_unitario) * 100) / 100 : '', cantTocada: false });
+  }
+  return EDIT.get(r.sku);
+}
+const fmtVel = (v) => v >= 1 ? `${fmtNum(v)}/día` : `${fmtNum(v * 30)}/mes`;
+
+async function cargarSugeridas(silencioso = false) {
+  if (sugCargando) return;
+  sugCargando = true;
+  if (!silencioso) $('sLista').innerHTML = '<div class="estado-lista">Calculando…</div>';
+  try {
+    const j = await api('sugeridas');
+    SUG = j.filas.map(r => ({ ...r, velocidad_diaria: Number(r.velocidad_diaria), stock_total: Number(r.stock_total), dias_cubrir: Number(r.dias_cubrir) }));
+    SUG_MAP = new Map(SUG.map(r => [r.sku, r]));
+    DIAS_DEFAULT = j.dias_default; CONDS = j.condiciones || {};
+    // Descartar ediciones de SKUs que ya no están; recalcular las no tocadas
+    for (const k of [...EDIT.keys()]) if (!SUG_MAP.has(k)) EDIT.delete(k);
+    for (const r of SUG) { const e = EDIT.get(r.sku); if (e && !e.cantTocada) { e.cant = cantSug(r); e.sel = e.cant > 0; } }
+    $('badgeSug').textContent = SUG.filter(r => cantSug(r) > 0).length || '';
+    if (!$('tabComprar').classList.contains('oculto')) pintarSugeridas();
+  } catch (e) {
+    if (!silencioso) {
+      $('sLista').innerHTML = `<div class="estado-lista error">⚠️ ${esc(e.message)}<br><button class="btn-sec" id="sReintentar">Reintentar</button></div>`;
+      $('sReintentar').onclick = () => cargarSugeridas();
+    }
+  } finally { sugCargando = false; }
+}
+
+function filasVisibles() {
+  const q = norm($('sBuscar').value);
+  return SUG.filter(r => {
+    if (VISTA === 'comprar' && !(cantSug(r) > 0 || editDe(r).sel)) return false;
+    if (!q) return true;
+    return norm(r.sku).includes(q) || norm(r.descripcion).includes(q) || norm(r.proveedor || 'sin proveedor').includes(q);
+  });
+}
+
+function pintarResumenSug() {
+  const sel = SUG.filter(r => { const e = editDe(r); return e.sel && Number(e.cant) > 0; });
+  const total = sel.reduce((a, r) => { const e = editDe(r); return a + Number(e.cant) * (Number(e.precio) || 0); }, 0);
+  const faltan = SUG.filter(r => cantSug(r) > 0).length;
+  $('sResumen').innerHTML = `
+    <div><span>Para reponer</span><b class="mono">${faltan}</b></div>
+    <div><span>Seleccionados</span><b class="mono">${sel.length}</b></div>
+    <div style="text-align:right"><span>Inversión</span><b class="mono">${fmtARS(total)}</b></div>`;
+}
+
+function pintarSugeridas() {
+  pintarResumenSug();
+  const filas = filasVisibles();
+  if (!SUG.length) { $('sLista').innerHTML = '<div class="estado-lista">No hay artículos con ventas en los últimos 60 días.</div>'; return; }
+  if (!filas.length) {
+    $('sLista').innerHTML = VISTA === 'comprar'
+      ? `<div class="estado-lista">✅ Todo cubierto para sus días objetivo.<br><small>Default: ${DIAS_DEFAULT} días. Tocá "Todos" para ajustar artículos.</small></div>`
+      : '<div class="estado-lista">Sin resultados.</div>';
+    return;
+  }
+  const grupos = new Map();
+  for (const r of filas) { const g = grupoDe(r); if (!grupos.has(g)) grupos.set(g, []); grupos.get(g).push(r); }
+  const orden = [...grupos.entries()].sort((a, b) => {
+    if (a[0] === 'sin') return 1; if (b[0] === 'sin') return -1;
+    const t = (rs) => rs.reduce((s, r) => s + cantSug(r) * (Number(r.costo_unitario) || 0), 0);
+    return t(b[1]) - t(a[1]);
+  });
+  let html = '';
+  for (const [g, rs] of orden) {
+    if (!GCONF.has(g)) {
+      const pid = g === 'sin' ? '' : g;
+      const c = CONDS[pid];
+      GCONF.set(g, { proveedor_id: pid, condicion: c?.condicion === 'cuenta_corriente' ? 'cuenta_corriente' : 'contado', dias_pago: c?.dias_pago > 0 ? c.dias_pago : 30 });
+    }
+    const conf = GCONF.get(g);
+    const nombre = g === 'sin' ? 'Sin proveedor' : (rs[0].proveedor || PROV_MAP.get(g)?.nombre || 'Proveedor');
+    rs.sort((a, b) => (Number(a.dias_cobertura) || 0) - (Number(b.dias_cobertura) || 0));
+    html += `<div class="grupo" data-g="${esc(g)}">
+      <div class="grupo-head"><b>${esc(nombre)}</b><span>${rs.length} ${rs.length === 1 ? 'artículo' : 'artículos'}</span></div>`;
+    for (const r of rs) html += itemHtml(r);
+    const opts = PROVEEDORES.filter(p => p.activo || p.id === conf.proveedor_id)
+      .map(p => `<option value="${p.id}" ${p.id === conf.proveedor_id ? 'selected' : ''}>${esc(p.nombre)}</option>`).join('');
+    html += `
+      <div class="grupo-pie">
+        <div class="field"><label>Proveedor del pedido</label><select data-gc="prov"><option value="">Elegí…</option>${opts}</select></div>
+        <div class="fila">
+          <div class="field" style="flex:1.6"><label>Condición</label>
+            <div class="seg" data-gc="cond">
+              <button data-v="contado" class="${conf.condicion === 'contado' ? 'activo' : ''}">Contado</button>
+              <button data-v="cuenta_corriente" class="${conf.condicion === 'cuenta_corriente' ? 'activo' : ''}">Cta. cte.</button>
+            </div>
+          </div>
+          <div class="field ${conf.condicion === 'cuenta_corriente' ? '' : 'oculto'}" data-gc="diasbox"><label>Plazo (días)</label>
+            <input type="number" inputmode="numeric" min="1" max="365" data-gc="dias" value="${conf.dias_pago}">
+          </div>
+        </div>
+        <button class="btn" data-gc="pasar"></button>
+      </div>
+    </div>`;
+  }
+  $('sLista').innerHTML = html;
+  for (const g of grupos.keys()) actualizarPieGrupo(g);
+}
+
+function itemHtml(r) {
+  const e = editDe(r);
+  const cob = r.dias_cobertura === null ? null : Number(r.dias_cobertura);
+  const cls = cob === null ? '' : cob < 7 ? 'bajo' : cob < r.dias_cubrir ? 'medio' : '';
+  const stockTxt = [`Stock <b>${fmtNum(r.stock_propio)}</b>`];
+  if (Number(r.stock_full) > 0) stockTxt.push(`Full <b>${fmtNum(r.stock_full)}</b>`);
+  if (Number(r.en_camino) > 0) stockTxt.push(`Pedido <b>${fmtNum(r.en_camino)}</b>`);
+  const sub = Number(e.cant) * (Number(e.precio) || 0);
+  return `
+    <div class="item ${e.sel ? '' : 'off'}" data-sku="${esc(r.sku)}">
+      <input type="checkbox" data-f="sel" ${e.sel ? 'checked' : ''} aria-label="Incluir ${esc(r.sku)}">
+      <div class="cab"><span class="sku mono">${esc(r.sku)}</span><span class="sub mono" data-f="sub">${sub > 0 ? fmtARS(sub) : '—'}</span></div>
+      <div class="tit">${esc(r.descripcion || SKU_MAP.get(r.sku)?.titulo || '')}</div>
+      <div class="datos">${stockTxt.join(' · ')} · Vende <b>${fmtVel(r.velocidad_diaria)}</b><br>
+        Cubre <b class="${cls}" data-f="cob">${cob === null ? '—' : fmtNum(cob) + ' d'}</b> · Objetivo <b data-f="obj">${fmtNum(Math.ceil(r.velocidad_diaria * r.dias_cubrir - 1e-9))}</b> u
+        ${r.costo_fuente === 'maestro' ? ' · <span class="medio">costo del maestro</span>' : ''}${!(Number(r.costo_unitario) > 0) ? ' · <span class="bajo">sin precio</span>' : ''}</div>
+      <div class="ins">
+        <div><label>Días cubrir</label><input type="number" inputmode="numeric" min="0" max="365" data-f="dias" value="${r.dias_cubrir}" class="${r.dias_personalizado ? 'pers' : ''}" placeholder="${DIAS_DEFAULT}" title="${r.dias_personalizado ? 'Personalizado. Vaciá para volver a ' + DIAS_DEFAULT : 'Default ' + DIAS_DEFAULT}"></div>
+        <div><label>Cantidad</label><input type="number" inputmode="decimal" min="0" step="any" data-f="cant" value="${e.cant}"></div>
+        <div><label>Precio c/u</label><input type="number" inputmode="decimal" min="0" step="any" data-f="precio" value="${e.precio}"></div>
+      </div>
+    </div>`;
+}
+
+function actualizarItem(el, r) {
+  const e = editDe(r);
+  el.classList.toggle('off', !e.sel);
+  el.querySelector('[data-f=sel]').checked = e.sel;
+  const sub = Number(e.cant) * (Number(e.precio) || 0);
+  el.querySelector('[data-f=sub]').textContent = sub > 0 ? fmtARS(sub) : '—';
+  el.querySelector('[data-f=obj]').textContent = fmtNum(Math.ceil(r.velocidad_diaria * r.dias_cubrir - 1e-9));
+  const cob = el.querySelector('[data-f=cob]');
+  const c = r.dias_cobertura === null ? null : Number(r.dias_cobertura);
+  cob.className = c === null ? '' : c < 7 ? 'bajo' : c < r.dias_cubrir ? 'medio' : '';
+}
+
+function lineasGrupo(g) {
+  return SUG.filter(r => grupoDe(r) === g).filter(r => { const e = editDe(r); return e.sel && Number(e.cant) > 0; });
+}
+function actualizarPieGrupo(g) {
+  const box = document.querySelector(`.grupo[data-g="${CSS.escape(g)}"]`); if (!box) return;
+  const ls = lineasGrupo(g);
+  const total = ls.reduce((a, r) => { const e = editDe(r); return a + Number(e.cant) * (Number(e.precio) || 0); }, 0);
+  const btn = box.querySelector('[data-gc=pasar]');
+  btn.textContent = ls.length ? `Pasar a compra · ${ls.length} ${ls.length === 1 ? 'artículo' : 'artículos'} · ${fmtARS(total)}` : 'Seleccioná artículos';
+  btn.disabled = !ls.length;
+  pintarResumenSug();
+}
+
+// Vista y búsqueda
+document.querySelectorAll('#segVista button').forEach(b => b.addEventListener('click', e => {
+  e.preventDefault(); VISTA = b.dataset.v; setSeg('segVista', VISTA); pintarSugeridas();
+}));
+let tmSug;
+$('sBuscar').addEventListener('input', () => { clearTimeout(tmSug); tmSug = setTimeout(pintarSugeridas, 200); });
+
+// Edición de artículos
+$('sLista').addEventListener('input', (ev) => {
+  const el = ev.target.closest('.item'); if (!el) return;
+  const r = SUG_MAP.get(el.dataset.sku); if (!r) return;
+  const e = editDe(r); const f = ev.target.dataset.f;
+  if (f === 'cant') { e.cant = ev.target.value === '' ? 0 : Number(ev.target.value); e.cantTocada = true; e.sel = e.cant > 0; }
+  else if (f === 'precio') e.precio = ev.target.value === '' ? '' : Number(ev.target.value);
+  else if (f === 'sel') e.sel = ev.target.checked;
+  else return;
+  actualizarItem(el, r); actualizarPieGrupo(grupoDe(r));
+});
+
+// Días a cubrir: se guardan al salir del campo (o Enter)
+$('sLista').addEventListener('change', async (ev) => {
+  if (ev.target.dataset.f !== 'dias') return;
+  const el = ev.target.closest('.item'); const r = SUG_MAP.get(el?.dataset.sku); if (!r) return;
+  const raw = ev.target.value.trim();
+  const dias = raw === '' ? null : Number(raw);
+  if (dias !== null && !(Number.isInteger(dias) && dias >= 0 && dias <= 365)) { toast('Días a cubrir: entero de 0 a 365', 'error'); ev.target.value = r.dias_cubrir; return; }
+  if (dias === r.dias_cubrir && r.dias_personalizado) return;
+  if (dias === null && !r.dias_personalizado) { ev.target.value = r.dias_cubrir; return; }
+  ev.target.disabled = true;
+  try {
+    await api('dias_guardar', { sku: r.sku, dias });
+    r.dias_personalizado = dias !== null;
+    r.dias_cubrir = dias === null ? DIAS_DEFAULT : dias;
+    ev.target.value = r.dias_cubrir;
+    ev.target.classList.toggle('pers', r.dias_personalizado);
+    const e = editDe(r);
+    if (!e.cantTocada) { e.cant = cantSug(r); e.sel = e.cant > 0; el.querySelector('[data-f=cant]').value = e.cant; }
+    actualizarItem(el, r); actualizarPieGrupo(grupoDe(r));
+    $('badgeSug').textContent = SUG.filter(x => cantSug(x) > 0).length || '';
+    toast(dias === null ? `${r.sku}: vuelve a ${DIAS_DEFAULT} días` : `${r.sku}: ${dias} días a cubrir`, 'ok');
+  } catch (err) { toast(err.message, 'error'); ev.target.value = r.dias_cubrir; }
+  finally { ev.target.disabled = false; }
+});
+$('sLista').addEventListener('keydown', (ev) => { if (ev.key === 'Enter' && ev.target.dataset.f === 'dias') ev.target.blur(); });
+
+// Pie de grupo: proveedor, condición, plazo y "Pasar a compra"
+$('sLista').addEventListener('click', async (ev) => {
+  const box = ev.target.closest('.grupo'); if (!box) return;
+  const g = box.dataset.g; const conf = GCONF.get(g);
+  const condBtn = ev.target.closest('[data-gc=cond] button');
+  if (condBtn) {
+    ev.preventDefault(); conf.condicion = condBtn.dataset.v;
+    box.querySelectorAll('[data-gc=cond] button').forEach(b => b.classList.toggle('activo', b.dataset.v === conf.condicion));
+    box.querySelector('[data-gc=diasbox]').classList.toggle('oculto', conf.condicion !== 'cuenta_corriente');
+    return;
+  }
+  if (!ev.target.closest('[data-gc=pasar]')) return;
+  ev.preventDefault();
+  conf.proveedor_id = box.querySelector('[data-gc=prov]').value;
+  conf.dias_pago = Number(box.querySelector('[data-gc=dias]').value);
+  const ls = lineasGrupo(g);
+  if (!ls.length) return;
+  if (!conf.proveedor_id) return toast('Elegí el proveedor del pedido', 'error');
+  if (conf.condicion === 'cuenta_corriente' && !(Number.isInteger(conf.dias_pago) && conf.dias_pago > 0)) return toast('Indicá el plazo en días', 'error');
+  const sinPrecio = ls.filter(r => !(Number(editDe(r).precio) > 0));
+  if (sinPrecio.length) return toast(`Falta el precio de: ${sinPrecio.map(r => r.sku).join(', ')}`, 'error');
+  const items = ls.map(r => ({ sku: r.sku, cantidad: Number(editDe(r).cant), precio: Number(editDe(r).precio) }));
+  const total = items.reduce((a, i) => a + i.cantidad * i.precio, 0);
+  const prov = PROV_MAP.get(conf.proveedor_id)?.nombre || 'proveedor';
+  const cond = conf.condicion === 'contado' ? 'Contado' : `Cuenta corriente ${conf.dias_pago} días`;
+  const detalle = items.map(i => `${i.sku} × ${fmtNum(i.cantidad)} · ${fmtARS(i.cantidad * i.precio)}`).join('\n');
+  const ok = await dialogo({ titulo: `Pedido a ${prov}`, mensaje: `${detalle}\n\nTotal ${fmtARS(total)} · ${cond}\nSe cargan como pedidas (hoy) y aparecen en Pendientes.`, aceptar: 'Pasar a compra' });
+  if (!ok) return;
+  const btn = box.querySelector('[data-gc=pasar]'); btn.disabled = true; btn.textContent = 'Guardando…';
+  try {
+    const j = await api('pasar_a_compra', { proveedor_id: conf.proveedor_id, condicion: conf.condicion, dias_pago: conf.condicion === 'cuenta_corriente' ? conf.dias_pago : null, items });
+    for (const i of items) EDIT.delete(i.sku);
+    for (const f of j.filas) {
+      const it = SKU_MAP.get(f.sku);
+      if (it) it.ultima = { fecha: f.fecha, proveedor_id: f.proveedor_id, proveedor_texto: null, precio: Number(f.precio_final_unitario), cantidad: f.cantidad_pedida };
+      LISTA.unshift(f);
+    }
+    toast(`Pedido a ${j.proveedor} cargado: ${j.filas.length} ${j.filas.length === 1 ? 'artículo' : 'artículos'} · ${fmtARS(j.total)}`, 'ok');
+    await cargarSugeridas();
+    cargarPendientes(true);
+  } catch (err) { toast(err.message, 'error'); actualizarPieGrupo(g); }
+});
+$('sLista').addEventListener('change', (ev) => {
+  const box = ev.target.closest('.grupo'); if (!box) return;
+  const conf = GCONF.get(box.dataset.g);
+  if (ev.target.dataset.gc === 'prov') conf.proveedor_id = ev.target.value;
+  if (ev.target.dataset.gc === 'dias') conf.dias_pago = Number(ev.target.value);
 });
 </script>
 </body>
